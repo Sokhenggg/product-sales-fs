@@ -1,54 +1,175 @@
+import { DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import {
-  Container,
-  Flex,
-  Text,
-  HStack,
+  Box,
   Button,
-  useColorMode,
+  Heading,
+  HStack,
+  IconButton,
+  Image,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
+  Text,
+  useColorModeValue,
+  useDisclosure,
+  useToast,
+  VStack,
 } from "@chakra-ui/react";
-import { Link } from "react-router-dom";
-import { PlusSquareIcon } from "@chakra-ui/icons";
-import { IoMoon } from "react-icons/io5";
-import { LuSun } from "react-icons/lu";
+import { useProductStore } from "../store/product";
+import { useState } from "react";
 
-const Navbar = () => {
-  const { colorMode, toggleColorMode } = useColorMode();
+const ProductCard = ({ product }) => {
+  const [updatedProduct, setUpdatedProduct] = useState(product);
+
+  const textColor = useColorModeValue("gray.600", "gray.200");
+  const bg = useColorModeValue("white", "gray.800");
+
+  const { deleteProduct, updateProduct } = useProductStore();
+  const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
+  const handleDeleteProduct = async (pid) => {
+    const { success, message } = await deleteProduct(pid);
+    if (!success) {
+      toast({
+        title: "Error",
+        description: message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: message,
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleUpdateProduct = async (pid, updatedProduct) => {
+    const { success, message } = await updateProduct(pid, updatedProduct);
+    onClose();
+    if (!success) {
+      toast({
+        title: "Error",
+        description: message,
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
+        status: "success",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
 
   return (
-    <Container maxW={"1140px"} px={4}>
-      <Flex
-        h={16}
-        alignItems={"center"}
-        justifyContent={"space-between"}
-        flexDir={{
-          base: "column",
-          sm: "row",
-        }}
-      >
-        <Text
-          fontSize={{ base: "22", sm: "28" }}
-          fontWeight={"bold"}
-          extTransform={"uppercase"}
-          extAlign={"center"}
-          bgGradient={"linear(to-r, cyan.400, blue.500)"}
-          bgClip={"text"}
-        >
-          <Link to={"/"}>Product Store 🛒</Link>
+    <Box
+      shadow="lg"
+      rounded="lg"
+      overflow="hidden"
+      transition="all 0.3s"
+      _hover={{ transform: "translateY(-5px)", shadow: "xl" }}
+      bg={bg}
+    >
+      <Image
+        src={product.image}
+        alt={product.name}
+        h={48}
+        w="full"
+        objectFit="cover"
+      />
+
+      <Box p={4}>
+        <Heading as="h3" size="md" mb={2}>
+          {product.name}
+        </Heading>
+
+        <Text fontWeight="bold" fontSize="xl" color={textColor} mb={4}>
+          ${product.price}
         </Text>
 
-        <HStack spacing={2} alignItems={"center"}>
-          <Link to={"/create"}>
-            <Button>
-              <PlusSquareIcon fontSize={20} />
-            </Button>
-          </Link>
-          <Button onClick={toggleColorMode}>
-            {colorMode === "light" ? <IoMoon /> : <LuSun size="20" />}
-          </Button>
+        <HStack spacing={2}>
+          <IconButton icon={<EditIcon />} onClick={onOpen} colorScheme="blue" />
+          <IconButton
+            icon={<DeleteIcon />}
+            onClick={() => handleDeleteProduct(product._id)}
+            colorScheme="red"
+          />
         </HStack>
-      </Flex>
-    </Container>
+      </Box>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+
+        <ModalContent>
+          <ModalHeader>Update Product</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Input
+                placeholder="Product Name"
+                name="name"
+                value={updatedProduct.name}
+                onChange={(e) =>
+                  setUpdatedProduct({ ...updatedProduct, name: e.target.value })
+                }
+              />
+              <Input
+                placeholder="Price"
+                name="price"
+                type="number"
+                value={updatedProduct.price}
+                onChange={(e) =>
+                  setUpdatedProduct({
+                    ...updatedProduct,
+                    price: e.target.value,
+                  })
+                }
+              />
+              <Input
+                placeholder="Image URL"
+                name="image"
+                value={updatedProduct.image}
+                onChange={(e) =>
+                  setUpdatedProduct({
+                    ...updatedProduct,
+                    image: e.target.value,
+                  })
+                }
+              />
+            </VStack>
+          </ModalBody>
+
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              mr={3}
+              onClick={() => handleUpdateProduct(product._id, updatedProduct)}
+            >
+              Update
+            </Button>
+            <Button variant="ghost" onClick={onClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </Box>
   );
 };
 
-export default Navbar;
+export default ProductCard;
